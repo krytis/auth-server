@@ -17,8 +17,15 @@ export class SQLiteDatabase implements Database {
     private readonly getUsersByIPQuery: SQLite.Statement<string>;
     private readonly getUsersByIPRangeQuery: SQLite.Statement<string>;
 
+    private readonly addTokenQuery: SQLite.Statement<[string, string, number]>;
+    private readonly getTokensQuery: SQLite.Statement<string>;
+    private readonly deleteTokensForUserQuery: SQLite.Statement<string>;
+    private readonly deleteSingleTokenQuery: SQLite.Statement<string>;
+    private readonly getTokensTransaction: SQLite.Transaction;
+
     constructor(databasePath: string) {
         this.database = new SQLite(databasePath);
+        this.database.pragma('foreign_keys = ON');
 
         const {hasDBInfo} = this.database
             .prepare(`SELECT count(*) AS hasDBInfo FROM sqlite_master WHERE type = 'table' AND name = 'db_info'`)
@@ -38,6 +45,26 @@ export class SQLiteDatabase implements Database {
         this.getUserByIDQuery = this.database.prepare('SELECT * FROM users WHERE id = ?');
         this.getUsersByIPQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip = ?');
         this.getUsersByIPRangeQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip LIKE ?');
+
+        this.addTokenQuery = this.database.prepare('INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)');
+        this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE user_id = ?');
+        this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE user_id = ?');
+        this.deleteSingleTokenQuery = this.database.prepare('DELETE FROM tokens WHERE token = ?');
+
+        this.getTokensTransaction = this.database.transaction((userid: string) => {
+            const tokens: Set<string> = new Set();
+            const results = this.getTokensQuery.all(userid);
+
+            for (const {token, expires_at} of results) {
+                if (expires_at < Date.now()) {
+                    this.deleteSingleTokenQuery.run(token);
+                    continue;
+                }
+                tokens.add(token);
+            }
+
+            return tokens;
+        });
     }
 
     addUser(data: UserData) {
@@ -74,6 +101,27 @@ export class SQLiteDatabase implements Database {
         const query = ip.endsWith('%') ? this.getUsersByIPRangeQuery : this.getUsersByIPQuery;
         const res = query.all(ip);
         return Promise.resolve(res.map(SQLiteDatabase.rowToUserData));
+    }
+
+    addToken(userid: string, token: string, expiresAt: number) {
+        try {
+            this.addTokenQuery.run(userid, token, expiresAt);
+        } catch (err: any) {
+            if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+                return Promise.reject(new Error(`The user ${userid} does not exist`));
+            }
+            return Promise.reject(err);
+        }
+        return Promise.resolve();
+    }
+
+    getUserTokens(userid: string): Promise<Set<string>> {
+        return Promise.resolve(this.getTokensTransaction(userid));
+    }
+
+    removeAllTokens(userid: string) {
+        this.deleteTokensForUserQuery.run(userid);
+        return Promise.resolve();
     }
 
     toString() {

@@ -22,6 +22,10 @@ export interface Database {
     getUserByID(userid: string): Promise<UserData | null>;
     /** should accept IPs (127.0.0.1) and IP ranges (127.0.*) */
     getUsersByIP(ip: string): Promise<UserData[]>;
+
+    addToken(userid: string, token: string, expiresAt: number): Promise<void>;
+    getUserTokens(userid: string): Promise<Set<string>>;
+    removeAllTokens(userid: string): Promise<void>;
 }
 
 export {SQLiteDatabase} from './sqlite';
