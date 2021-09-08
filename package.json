@@ -1,0 +1,34 @@
+{
+  "name": "auth-server",
+  "version": "1.0.0",
+  "description": "An authentication server designed to work with the Krytis ecosystem.",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "test": "npm run lint && jest",
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krytis/auth-server.git"
+  },
+  "author": "Annika L. <annika0uwu@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krytis/auth-server/issues"
+  },
+  "homepage": "https://github.com/krytis/auth-server#readme",
+  "dependencies": {
+    "typescript": "^4.4.2"
+  },
+  "devDependencies": {
+    "@pkmn/eslint-config": "^1.4.0",
+    "@types/jest": "^27.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.31.0",
+    "@typescript-eslint/parser": "^4.31.0",
+    "codecov": "^3.8.3",
+    "eslint": "^7.32.0",
+    "jest": "^27.1.0",
+    "ts-jest": "^27.0.5"
+  }
+}

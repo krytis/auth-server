@@ -1,0 +1,10 @@
+{
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageProvider": "v8",
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/*.ts"],
+    "transform": {
+        "^.+\\.(ts|tsx)$": "ts-jest"
+    }
+}
