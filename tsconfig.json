@@ -7,5 +7,6 @@
         "downlevelIteration": true,
         "strict": true,
     },
-    "include": ["src/**/*.ts"]
+    "include": ["src/**/*.ts"],
+    "exclude": ["**/tests/"]
 }

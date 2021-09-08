@@ -4,9 +4,9 @@
   "description": "An authentication server designed to work with the Krytis ecosystem.",
   "scripts": {
     "lint": "eslint . --ext .ts",
-    "test": "npm run lint && jest",
+    "test": "npm run lint && npm run build && jest",
     "build": "tsc",
-    "start": "npm run build && node dist/index.js"
+    "start": "npm run build && node dist/app.js"
   },
   "repository": {
     "type": "git",

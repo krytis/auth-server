@@ -4,5 +4,5 @@
         "downlevelIteration": true,
         "strict": true,
     },
-    "include": ["./**/*.ts"]
+    "include": ["**/tests/**/*.ts"]
 }
