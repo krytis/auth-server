@@ -3,7 +3,7 @@
  * All database abstractions should be able to pass these.
  */
 
-import {Database, SQLiteDatabase} from '..';
+import {Database, SQLiteDatabase} from '../database';
 
 const wrappers: Database[] = [
     new SQLiteDatabase(':memory:'),
@@ -60,7 +60,9 @@ describe.each(wrappers)('%s', (database) => {
         beforeAll(async () => {
             await database.addUser({id: 'tokentest', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'});
         });
-        beforeEach(async () => database.removeAllTokens('tokentest'));
+        beforeEach(async () => {
+            await database.deleteAllTokens('tokentest');
+        });
 
         test('disallow adding tokens for nonexistent users', async () => {
             await expect(database.addToken('not a real user ID', 'token', 1)).rejects.toThrow(/user .* does not exist/);
@@ -85,7 +87,7 @@ describe.each(wrappers)('%s', (database) => {
             await database.addToken('tokentest', 'another valid token', Date.now() + 10000);
             await database.addToken('tokentest', 'expired token', Date.now() - 1);
 
-            await database.removeAllTokens('tokentest');
+            await database.deleteAllTokens('tokentest');
             const tokens = await database.getUserTokens('tokentest');
             expect(tokens.size).toBe(0);
         });
