@@ -25,7 +25,7 @@ export interface Database {
 
     addToken(userid: string, token: string, expiresAt: number): Promise<void>;
     getUserTokens(userid: string): Promise<Set<string>>;
-    removeAllTokens(userid: string): Promise<void>;
+    deleteAllTokens(userid: string): Promise<void>;
 }
 
 export {SQLiteDatabase} from './sqlite';
