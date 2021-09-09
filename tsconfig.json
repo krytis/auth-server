@@ -6,6 +6,7 @@
         "rootDir": "./src",
         "downlevelIteration": true,
         "strict": true,
+        "incremental": true
     },
     "include": ["src/**/*.ts"],
     "exclude": ["**/tests/"]
