@@ -30,11 +30,13 @@ export class AuthenticationAPI {
 
         const passwordHash = await AuthenticationAPI.hashPassword(password);
         await this.database.addUser({id, passwordHash, registrationTime: Date.now(), ip});
+        return {success: true};
     }
 
     async deleteUser(id: string, password: string) {
         await this.verifyPassword(id, password);
         await this.database.deleteUser(id);
+        return {success: true};
     }
 
     async createToken(id: string, password: string) {
@@ -48,28 +50,31 @@ export class AuthenticationAPI {
     }
 
     // logout
-    async deleteAllTokens(userid: string, token: string) {
-        await this.verifyToken(userid, token);
-        await this.database.deleteAllTokens(userid);
+    async deleteAllTokens(username: string, token: string) {
+        await this.validateToken(username, token);
+        await this.database.deleteAllTokens(username);
+        return {success: true};
     }
 
-    async changePassword(userid: string, oldPassword: string, newPassword: string) {
-        await this.verifyPassword(userid, oldPassword);
+    async changePassword(username: string, oldPassword: string, newPassword: string) {
+        await this.verifyPassword(username, oldPassword);
         const newHash = await AuthenticationAPI.hashPassword(newPassword);
-        await this.database.updatePasswordHash(userid, newHash);
+        await this.database.updatePasswordHash(username, newHash);
+        return {success: true};
     }
 
-    async verifyToken(userid: string, token: string) {
-        const tokens = await this.database.getUserTokens(userid);
-        if (!tokens.has(token)) throw new PublicFacingError('Incorrect userid/token');
+    async validateToken(username: string, token: string) {
+        const tokens = await this.database.getUserTokens(username);
+        if (!tokens.has(token)) throw new PublicFacingError('Incorrect username/token');
+        return {valid: true};
     }
 
-    async verifyPassword(userid: string, password: string) {
-        const user = await this.database.getUserByID(userid);
-        if (!user) throw new PublicFacingError('Incorrect userid/password');
+    async verifyPassword(username: string, password: string) {
+        const user = await this.database.getUserByID(username);
+        if (!user) throw new PublicFacingError('Incorrect username/password');
 
         const isValid = await argon2.verify(user.passwordHash, password);
-        if (!isValid) throw new PublicFacingError('Incorrect userid/password');
+        if (!isValid) throw new PublicFacingError('Incorrect username/password');
     }
 
     private async generateToken(): Promise<string> {
