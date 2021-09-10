@@ -10,7 +10,6 @@ export interface UserData {
     ip: string;
 }
 
-// TODO: unit tests for this
 /** Abstract database interface, which can be implemented inn SQLite, Postgres, etc */
 export interface Database {
     addUser(data: UserData): Promise<void>;

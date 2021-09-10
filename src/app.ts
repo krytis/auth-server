@@ -5,10 +5,8 @@ import {config} from './config-loader';
 import {addRoutes, errorHandler} from './routes';
 
 // TODO:
-// - support creating users via HTTPS
-// - support logging in via HTTPS
-//   - authenticate username/password via HTTPS and produce an authentication token
-//   - support verifying the authentication token through Redis (from @krytis/core)
+// - tests for routes (start server? use Fastify?)
+// - investigate need to verify the authentication token via Redis (from @krytis/core)
 
 async function startServer(port: number) {
     const server = fastify();
