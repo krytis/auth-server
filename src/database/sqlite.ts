@@ -2,8 +2,8 @@
  * Implementation of a SQLite database wrapper.
  */
 
-import type {Database, UserData} from '..';
-import {PublicFacingError} from '../../api';
+import type {Database, UserData} from '.';
+import {PublicFacingError} from '../api';
 
 import * as SQLite from 'better-sqlite3';
 import * as path from 'path';
@@ -34,7 +34,8 @@ export class SQLiteDatabase implements Database {
             .get();
         if (hasDBInfo === 0) {
             // we need to set up the database
-            const schema = fs.readFileSync(path.resolve(__dirname, 'schemas', 'users.sql')).toString();
+            const schemaLocation = path.resolve(__dirname, '..', '..', 'schemas', 'sqlite', 'users.sql');
+            const schema = fs.readFileSync(schemaLocation).toString();
             this.database.exec(schema);
             // TODO: support migrations
         }
@@ -53,9 +54,9 @@ export class SQLiteDatabase implements Database {
         this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE user_id = ?');
         this.deleteSingleTokenQuery = this.database.prepare('DELETE FROM tokens WHERE token = ?');
 
-        this.getTokensTransaction = this.database.transaction((userid: string) => {
+        this.getTokensTransaction = this.database.transaction((username: string) => {
             const tokens: Set<string> = new Set();
-            const results = this.getTokensQuery.all(userid);
+            const results = this.getTokensQuery.all(username);
 
             for (const {token, expires_at} of results) {
                 if (expires_at < Date.now()) {
@@ -81,20 +82,20 @@ export class SQLiteDatabase implements Database {
         return Promise.resolve();
     }
 
-    deleteUser(userid: string) {
-        const res = this.deleteUserQuery.run(userid);
-        if (res.changes === 0) throw new PublicFacingError(`User ${userid} does not exist`);
+    deleteUser(username: string) {
+        const res = this.deleteUserQuery.run(username);
+        if (res.changes === 0) throw new PublicFacingError(`User ${username} does not exist`);
         return Promise.resolve();
     }
 
-    updatePasswordHash(userid: string, passwordHash: string) {
-        const res = this.updatePasswordQuery.run(passwordHash, userid);
-        if (res.changes === 0) return Promise.reject(new PublicFacingError(`User ${userid} does not exist`));
+    updatePasswordHash(username: string, passwordHash: string) {
+        const res = this.updatePasswordQuery.run(passwordHash, username);
+        if (res.changes === 0) return Promise.reject(new PublicFacingError(`User ${username} does not exist`));
         return Promise.resolve();
     }
 
-    getUserByID(userid: string): Promise<UserData | null> {
-        const res = this.getUserByIDQuery.get(userid);
+    getUserByID(username: string): Promise<UserData | null> {
+        const res = this.getUserByIDQuery.get(username);
         return Promise.resolve(res ? SQLiteDatabase.rowToUserData(res) : null);
     }
 
@@ -105,24 +106,24 @@ export class SQLiteDatabase implements Database {
         return Promise.resolve(res.map(SQLiteDatabase.rowToUserData));
     }
 
-    addToken(userid: string, token: string, expiresAt: number) {
+    addToken(username: string, token: string, expiresAt: number) {
         try {
-            this.addTokenQuery.run(userid, token, expiresAt);
+            this.addTokenQuery.run(username, token, expiresAt);
         } catch (err: any) {
             if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
-                return Promise.reject(new PublicFacingError(`The user ${userid} does not exist`));
+                return Promise.reject(new PublicFacingError(`The user ${username} does not exist`));
             }
             return Promise.reject(err);
         }
         return Promise.resolve();
     }
 
-    getUserTokens(userid: string): Promise<Set<string>> {
-        return Promise.resolve(this.getTokensTransaction(userid));
+    getUserTokens(username: string): Promise<Set<string>> {
+        return Promise.resolve(this.getTokensTransaction(username));
     }
 
-    deleteAllTokens(userid: string) {
-        this.deleteTokensForUserQuery.run(userid);
+    deleteAllTokens(username: string) {
+        this.deleteTokensForUserQuery.run(username);
         return Promise.resolve();
     }
 

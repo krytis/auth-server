@@ -14,18 +14,18 @@ export interface UserData {
 /** Abstract database interface, which can be implemented inn SQLite, Postgres, etc */
 export interface Database {
     addUser(data: UserData): Promise<void>;
-    deleteUser(userid: string): Promise<void>;
+    deleteUser(username: string): Promise<void>;
 
     // there should be no need to alter registration time or IP address
-    updatePasswordHash(userid: string, newHash: string): Promise<void>;
+    updatePasswordHash(username: string, newHash: string): Promise<void>;
 
-    getUserByID(userid: string): Promise<UserData | null>;
+    getUserByID(username: string): Promise<UserData | null>;
     /** should accept IPs (127.0.0.1) and IP ranges (127.0.*) */
     getUsersByIP(ip: string): Promise<UserData[]>;
 
-    addToken(userid: string, token: string, expiresAt: number): Promise<void>;
-    getUserTokens(userid: string): Promise<Set<string>>;
-    deleteAllTokens(userid: string): Promise<void>;
+    addToken(username: string, token: string, expiresAt: number): Promise<void>;
+    getUserTokens(username: string): Promise<Set<string>>;
+    deleteAllTokens(username: string): Promise<void>;
 }
 
 export {SQLiteDatabase} from './sqlite';
