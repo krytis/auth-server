@@ -34,13 +34,13 @@ export class AuthenticationAPI {
     }
 
     async deleteUser(id: string, password: string) {
-        await this.verifyPassword(id, password);
+        await this.checkPassword(id, password);
         await this.database.deleteUser(id);
         return {success: true};
     }
 
     async createToken(id: string, password: string) {
-        await this.verifyPassword(id, password);
+        await this.checkPassword(id, password);
 
         const token = await this.generateToken();
         const expiresAt = Date.now() + this.tokenTTL;
@@ -51,25 +51,33 @@ export class AuthenticationAPI {
 
     // logout
     async deleteAllTokens(username: string, token: string) {
-        await this.validateToken(username, token);
+        await this.checkToken(username, token);
         await this.database.deleteAllTokens(username);
         return {success: true};
     }
 
     async changePassword(username: string, oldPassword: string, newPassword: string) {
-        await this.verifyPassword(username, oldPassword);
+        await this.checkPassword(username, oldPassword);
         const newHash = await AuthenticationAPI.hashPassword(newPassword);
         await this.database.updatePasswordHash(username, newHash);
         return {success: true};
     }
 
-    async validateToken(username: string, token: string) {
+    async checkToken(username: string, token: string) {
         const tokens = await this.database.getUserTokens(username);
         if (!tokens.has(token)) throw new PublicFacingError('Incorrect username/token');
-        return {valid: true};
     }
 
-    async verifyPassword(username: string, password: string) {
+    async validateToken(username: string, token: string) {
+        try {
+            await this.checkToken(username, token);
+            return {valid: true};
+        } catch {
+            return {valid: false};
+        }
+    }
+
+    async checkPassword(username: string, password: string) {
         const user = await this.database.getUserByID(username);
         if (!user) throw new PublicFacingError('Incorrect username/password');
 

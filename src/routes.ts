@@ -1,6 +1,6 @@
 // Express routes
 
-import type {
+import fastify, {
     FastifyInstance, FastifyPluginOptions, FastifyReply,
     FastifyRequest, HookHandlerDoneFunction,
 } from 'fastify';
@@ -12,7 +12,7 @@ import {config} from './config-loader';
 import {SQLiteDatabase} from './database';
 import {passwordChangeSchema, usernamePasswordSchema, usernameTokenSchema} from './schemas';
 
-export function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
+function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
     if (error.name === 'PublicFacingError') {
         /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
         reply.send({error: error.message});
@@ -23,41 +23,43 @@ export function errorHandler(error: FastifyError, request: FastifyRequest, reply
     }
 }
 
-export function addRoutes(fastify: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
+function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
     const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath));
 
-    fastify.post<{Body: FromSchema<typeof usernamePasswordSchema>}>(
+    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/createuser',
-        {schema: {body: usernamePasswordSchema}},
-        async request => api.createUser(request.body.username, request.body.password, request.ip)
+        {schema: {querystring: usernamePasswordSchema}},
+        async request => api.createUser(request.query.username, request.query.password, request.ip)
     );
-    fastify.post<{Body: FromSchema<typeof usernamePasswordSchema>}>(
+    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/deleteuser',
-        {schema: {body: usernamePasswordSchema}},
-        async request => api.deleteUser(request.body.username, request.body.password)
+        {schema: {querystring: usernamePasswordSchema}},
+        async request => api.deleteUser(request.query.username, request.query.password)
     );
-    fastify.post<{Body: FromSchema<typeof usernamePasswordSchema>}>(
-        '/gettoken',
-        {schema: {body: usernamePasswordSchema}},
-        async request => api.createToken(request.body.username, request.body.password)
+    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
+        '/login',
+        {schema: {querystring: usernamePasswordSchema}},
+        async request => api.createToken(request.query.username, request.query.password)
     );
-    fastify.post<{Body: FromSchema<typeof usernameTokenSchema>}>(
+    server.post<{Querystring: FromSchema<typeof usernameTokenSchema>}>(
         '/logout',
-        {schema: {body: usernameTokenSchema}},
-        async request => api.deleteAllTokens(request.body.username, request.body.token)
+        {schema: {querystring: usernameTokenSchema}},
+        async request => api.deleteAllTokens(request.query.username, request.query.token)
     );
-    fastify.post<{Body: FromSchema<typeof passwordChangeSchema>}>(
+    server.post<{Querystring: FromSchema<typeof passwordChangeSchema>}>(
         '/changepassword',
-        {schema: {body: passwordChangeSchema}},
-        async request => api.changePassword(request.body.username, request.body.oldPassword, request.body.newPassword)
+        {schema: {querystring: passwordChangeSchema}},
+        async request => (
+            api.changePassword(request.query.username, request.query.oldPassword, request.query.newPassword)
+        ),
     );
-    fastify.post<{Body: FromSchema<typeof usernameTokenSchema>}>(
+    server.post<{Querystring: FromSchema<typeof usernameTokenSchema>}>(
         '/validatetoken',
-        {schema: {body: usernameTokenSchema}},
-        async request => api.validateToken(request.body.username, request.body.token)
+        {schema: {querystring: usernameTokenSchema}},
+        async request => api.validateToken(request.query.username, request.query.token)
     );
 
-    fastify.get('/', async (request, reply) => {
+    server.get('/', async (request, reply) => {
         await reply
             .type('text/html')
             .send(
@@ -68,5 +70,17 @@ export function addRoutes(fastify: FastifyInstance, options: FastifyPluginOption
     });
 
     done();
+}
+
+export async function createServer() {
+    const server = fastify();
+    server.setErrorHandler(errorHandler);
+    await server.register(addRoutes);
+    return server;
+}
+
+export async function startServer(port: number) {
+    const server = await createServer();
+    await server.listen(port);
 }
 
