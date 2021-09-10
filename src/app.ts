@@ -6,6 +6,6 @@ import {startServer} from './routes';
 // - tests for routes (start server? use Fastify?)s
 
 startServer(config.port).then(
-    () => console.log(`Server listening on port ${config.port}`),
+    () => console.log(`Krytis reference authentication server listening on port ${config.port}.`),
     err => console.error(`Error starting server: ${err as string}`),
 );
