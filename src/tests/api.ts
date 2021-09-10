@@ -6,17 +6,17 @@ import {AuthenticationAPI} from '../api';
 import {SQLiteDatabase} from '../database';
 
 describe('AuthenticationAPI', () => {
-    const userid = 'testuser';
+    const username = 'testuser';
     const password = 'hunter2';
     const database = new SQLiteDatabase(':memory:');
     const api = new AuthenticationAPI(database);
 
     beforeEach(async () => {
-        await api.createUser(userid, password, '127.0.0.1');
+        await api.createUser(username, password, '127.0.0.1');
     });
     afterEach(async () => {
         try {
-            await database.deleteUser(userid);
+            await database.deleteUser(username);
         } catch {}
     });
 
@@ -26,61 +26,61 @@ describe('AuthenticationAPI', () => {
     });
 
     test('password verification', async () => {
-        await expect(api.verifyPassword(userid, password)).resolves.not.toThrow();
-        await expect(api.verifyPassword(userid, 'not the password')).rejects.toThrow();
-        await expect(api.verifyPassword('not the userid', password)).rejects.toThrow();
-        await expect(api.verifyPassword('not the userid', 'not the password')).rejects.toThrow();
+        await expect(api.verifyPassword(username, password)).resolves.not.toThrow();
+        await expect(api.verifyPassword(username, 'not the password')).rejects.toThrow();
+        await expect(api.verifyPassword('not the username', password)).rejects.toThrow();
+        await expect(api.verifyPassword('not the username', 'not the password')).rejects.toThrow();
     });
 
     test('password changes', async () => {
-        await expect(api.changePassword(userid, password, 'newpassword')).resolves.not.toThrow();
+        await expect(api.changePassword(username, password, 'newpassword')).resolves.not.toThrow();
 
-        await expect(api.verifyPassword(userid, password)).rejects.toThrow();
-        await expect(api.verifyPassword(userid, 'newpassword')).resolves.not.toThrow();
+        await expect(api.verifyPassword(username, password)).rejects.toThrow();
+        await expect(api.verifyPassword(username, 'newpassword')).resolves.not.toThrow();
     });
 
     test('user deletion', async () => {
         // user exists & password can be verified
-        await expect(api.verifyPassword(userid, password)).resolves.not.toThrow();
-        expect(await database.getUserByID(userid)).not.toBe(null);
+        await expect(api.verifyPassword(username, password)).resolves.not.toThrow();
+        expect(await database.getUserByID(username)).not.toBe(null);
 
-        await api.deleteUser(userid, password);
+        await api.deleteUser(username, password);
 
         // user does not exist & password can't be verified
-        await expect(api.verifyPassword(userid, password)).rejects.toThrow();
-        expect(await database.getUserByID(userid)).toBe(null);
+        await expect(api.verifyPassword(username, password)).rejects.toThrow();
+        expect(await database.getUserByID(username)).toBe(null);
     });
 
     describe('tokens', () => {
         test('token generation requires a password', async () => {
-            await expect(api.createToken(userid, password)).resolves.not.toThrow();
-            await expect(api.createToken(userid, 'not the password')).rejects.toThrow();
-            await expect(api.createToken('not the userid', password)).rejects.toThrow();
-            await expect(api.createToken('not the userid', 'not the password')).rejects.toThrow();
+            await expect(api.createToken(username, password)).resolves.not.toThrow();
+            await expect(api.createToken(username, 'not the password')).rejects.toThrow();
+            await expect(api.createToken('not the username', password)).rejects.toThrow();
+            await expect(api.createToken('not the username', 'not the password')).rejects.toThrow();
         });
 
         test('token verification', async () => {
-            const {token} = await api.createToken(userid, password);
+            const {token} = await api.createToken(username, password);
 
-            await expect(api.verifyToken(userid, token)).resolves.not.toThrow();
-            await expect(api.verifyToken(userid, 'not the token')).rejects.toThrow();
-            await expect(api.verifyToken('not the userid', token)).rejects.toThrow();
-            await expect(api.verifyToken('not the userid', 'not the token')).rejects.toThrow();
+            await expect(api.validateToken(username, token)).resolves.not.toThrow();
+            await expect(api.validateToken(username, 'not the token')).rejects.toThrow();
+            await expect(api.validateToken('not the username', token)).rejects.toThrow();
+            await expect(api.validateToken('not the username', 'not the token')).rejects.toThrow();
         });
 
         test('token deletion', async () => {
-            const {token: token1} = await api.createToken(userid, password);
-            const {token: token2} = await api.createToken(userid, password);
+            const {token: token1} = await api.createToken(username, password);
+            const {token: token2} = await api.createToken(username, password);
 
             // tokens work before logout
-            await expect(api.verifyToken(userid, token1)).resolves.not.toThrow();
-            await expect(api.verifyToken(userid, token2)).resolves.not.toThrow();
+            await expect(api.validateToken(username, token1)).resolves.not.toThrow();
+            await expect(api.validateToken(username, token2)).resolves.not.toThrow();
 
-            await api.deleteAllTokens(userid, token1);
+            await api.deleteAllTokens(username, token1);
 
             // tokens no longer work!
-            await expect(api.verifyToken(userid, token1)).rejects.toThrow();
-            await expect(api.verifyToken(userid, token2)).rejects.toThrow();
+            await expect(api.validateToken(username, token1)).rejects.toThrow();
+            await expect(api.validateToken(username, token2)).rejects.toThrow();
         });
     });
 });
