@@ -19,7 +19,7 @@ export class AuthenticationAPI {
     private readonly tokenTTL: number;
     private readonly tokenSize: number;
 
-    constructor(database: Database, tokenTTL = 24 * 60 * 60 * 1000, tokenSize = 32) {
+    constructor(database: Database, tokenTTL: number, tokenSize = 32) {
         this.database = database;
         this.tokenTTL = tokenTTL;
         this.tokenSize = tokenSize;

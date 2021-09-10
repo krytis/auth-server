@@ -24,7 +24,7 @@ function errorHandler(error: FastifyError, request: FastifyRequest, reply: Fasti
 }
 
 function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
-    const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath));
+    const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL);
 
     server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/createuser',
@@ -79,8 +79,8 @@ export async function createServer() {
     return server;
 }
 
-export async function startServer(port: number) {
+export async function startServer(port: number, address: string) {
     const server = await createServer();
-    await server.listen(port);
+    await server.listen(port, address);
 }
 

@@ -9,7 +9,7 @@ describe('AuthenticationAPI', () => {
     const username = 'testuser';
     const password = 'hunter2';
     const database = new SQLiteDatabase(':memory:');
-    const api = new AuthenticationAPI(database);
+    const api = new AuthenticationAPI(database, 100000);
 
     beforeEach(async () => {
         await api.createUser(username, password, '127.0.0.1');

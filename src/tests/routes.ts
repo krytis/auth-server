@@ -3,7 +3,7 @@
  */
 
 jest.mock('../config-loader', () => ({
-    config: {databasePath: ':memory:', port: -1},
+    config: {databasePath: ':memory:', port: -1, tokenTTL: 100000, listenAddress: '127.0.0.1'},
 }));
 import {createServer} from '../routes';
 

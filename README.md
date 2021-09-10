@@ -15,6 +15,10 @@ Within the cloned `auth-server/` directory, you should create a `.env` file that
  - `PORT`: the port that the server should listen for HTTP requests on
  - `DATABASE_PATH`: a path to a SQLite database, which will be created on startup if it does not exist. If the path specified isn't absolute, it will be parsed relative to `auth-server/`
 
+The following additional configuration may be specified, but have sane default values:
+ - `TOKEN_TTL`: the time that an authentication token will be valid for, in milliseconds. Defaults to `60480000`, or one week.
+ - `LISTEN_ADDRESS`: the IP address that the server should listen on. Defaults to `127.0.0.1`, since the server is designed for use with a reverse proxy.
+
 ### Running
 The server can be built and run with the following commands, run from within the `auth-server/` directory:
 ```bash
