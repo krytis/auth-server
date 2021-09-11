@@ -37,8 +37,16 @@ Creates a new user.
 - `username`: the username of the user to be created. Note that usernames are case-sensitive and can include non-alphanumeric characters.
 - `password`: the password to use for the user
 #### Response
-- `{"success": true}` or equivalent JSON on success
-- `{"error": "User <username> already exists"}` or equivalent JSON if a user by the same name already exists
+- `{"id": <id>}` or equivalent JSON on success, where `<id>` is a user's numerical ID (which can be used for other API endpoints)
+- `{"error": "User <name> already exists"}` or equivalent JSON if the user already exists
+
+### `GET /users/<name>`
+Gets the ID of the user with the username `<name>`.
+#### Required parameters
+None!
+#### Response
+- `{"id": <id>}` or equivalent JSON on success, where `<id>` is a user's numerical ID
+- `{"error": "User <name> does not exist"}` or equivalent JSON if a user by the same name does not exist
 
 ### `DELETE /users/<id>`
 Deletes the user identified by the `<id>`.
@@ -46,40 +54,40 @@ Deletes the user identified by the `<id>`.
 - `password`: the user's password
 #### Response
 - `{"success": true}` or equivalent JSON on success
-- `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
 
 ### `POST /changepassword`
 Changes a user's password.
 #### Required parameters
-- `username`: the username of the user whose password is being changed
+- `userid`: the user ID of the user whose password is being changed
 - `oldPassword`: the user's current password
 - `newPassword`: the new password desired for the user
 #### Response
 - `{"success": true}` or equivalent JSON on success
-- `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
 
 ### `POST /login`
 Logs in, returning an authentication token.
 #### Required parameters
-- `username`: the username of the user to log in as
+- `userid`: the user ID of the user to log in as
 - `password`: the user's password
 #### Response
 - `{"token": <token>, "expiresAt": <timestamp>}` or equivalent JSON on success, where `<token>` is an authentication token (long random string) that can be used on other API endpoints, and `<timestamp>` is the number of milliseconds since the UNIX epoch at which the token expires
-- `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
 
 ### `POST /logout`
 Logs out, invalidating all tokens for a user.
 #### Required parameters
-- `username`: the username of the user to log out from
+- `userid`: the user ID of the user to log out from
 - `token`: an authentication token for the user
 #### Response
 - `{"success": true}` or equivalent JSON on success
-- `{"error": "Incorrect username/token"}` or equivalent JSON if the username/token pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect userid/token"}` or equivalent JSON if the userid/token pair is not correct (including if the user doesn't exist)
 
 ### `POST /validatetoken`
-Checks if a user/token pair is valid.
+Checks if a userid/token pair is valid.
 #### Required parameters
-- `username`: the username of the user to validate
+- `userid`: the user ID of the user to validate
 - `token`: an authentication token for the user
 #### Response
 - `{"valid": true}` or equivalent JSON if the token is valid

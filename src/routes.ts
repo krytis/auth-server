@@ -10,52 +10,61 @@ import type {FromSchema} from 'json-schema-to-ts';
 import {AuthenticationAPI} from './api';
 import {config} from './config';
 import {SQLiteDatabase} from './database';
-import {passwordChangeSchema, passwordOnlySchema, usernamePasswordSchema, usernameTokenSchema} from './schemas';
+import {
+    passwordChangeSchema, passwordOnlySchema, userIDPasswordSchema,
+    usernamePasswordSchema, userIDTokenSchema,
+} from './schemas';
 
 function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
     if (error.name === 'PublicFacingError') {
-        return reply.send({error: error.message});
+        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
+        reply.send({error: error.message});
     } else {
         console.error(`ERROR: ${error.stack as string}`);
         /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-        return reply.status(500).send({error: 'Unknown error'});
+        reply.status(500).send({error: 'Unknown error'});
     }
 }
 
 function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
     const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL);
 
+    server.get<{Params: {name: string}}>(
+        '/users/:name',
+        {schema: {params: {name: {type: 'string'}}}},
+        async request => api.getUserID(request.params.name),
+    );
     server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/users',
         {schema: {querystring: usernamePasswordSchema}},
         async request => api.createUser(request.query.username, request.query.password, request.ip)
     );
-    server.delete<{Querystring: FromSchema<typeof passwordOnlySchema>; Params: {id: string}}>(
+    server.delete<{Querystring: FromSchema<typeof passwordOnlySchema>; Params: {id: number}}>(
         '/users/:id',
-        {schema: {querystring: passwordOnlySchema, params: {id: {type: 'string'}}}},
+        {schema: {querystring: passwordOnlySchema, params: {id: {type: 'number'}}}},
         async request => api.deleteUser(request.params.id, request.query.password)
     );
-    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
+    server.post<{Querystring: FromSchema<typeof userIDPasswordSchema>}>(
         '/login',
-        {schema: {querystring: usernamePasswordSchema}},
-        async request => api.createToken(request.query.username, request.query.password)
+        {schema: {querystring: userIDPasswordSchema}},
+        async request => api.createToken(request.query.userid, request.query.password)
     );
-    server.post<{Querystring: FromSchema<typeof usernameTokenSchema>}>(
+    server.post<{Querystring: FromSchema<typeof userIDTokenSchema>}>(
         '/logout',
-        {schema: {querystring: usernameTokenSchema}},
-        async request => api.deleteAllTokens(request.query.username, request.query.token)
+        {schema: {querystring: userIDTokenSchema}},
+        async request => api.deleteAllTokens(request.query.userid, request.query.token)
     );
     server.post<{Querystring: FromSchema<typeof passwordChangeSchema>}>(
         '/changepassword',
         {schema: {querystring: passwordChangeSchema}},
         async request => (
-            api.changePassword(request.query.username, request.query.oldPassword, request.query.newPassword)
+            api.changePassword(request.query.userid, request.query.oldPassword, request.query.newPassword)
         ),
     );
-    server.post<{Querystring: FromSchema<typeof usernameTokenSchema>}>(
+    server.post<{Querystring: FromSchema<typeof userIDTokenSchema>}>(
         '/validatetoken',
-        {schema: {querystring: usernameTokenSchema}},
-        async request => api.validateToken(request.query.username, request.query.token)
+        {schema: {querystring: userIDTokenSchema}},
+        async request => api.validateToken(request.query.userid, request.query.token)
     );
 
     server.get('/', async (request, reply) => {

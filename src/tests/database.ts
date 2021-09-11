@@ -12,31 +12,40 @@ const wrappers: Database[] = [
 describe.each(wrappers)('%s', (database) => {
     describe('users', () => {
         test('adding, deleting, and retrieving users', async () => {
-            const user = {id: 'testuser2', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
-            expect(await database.getUserByID(user.id)).toBe(null);
+            const user = {name: 'testuser2', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
 
-            await database.addUser(user);
-            expect(await database.getUserByID(user.id)).toStrictEqual(user);
+            const id = await database.addUser(user);
+            expect(await database.getUserByID(id)).toStrictEqual(user);
+            expect(await database.getUserID(user.name)).toBe(id);
 
-            await database.deleteUser(user.id);
-            expect(await database.getUserByID(user.id)).toBe(null);
+            await database.deleteUser(id);
+            expect(await database.getUserByID(id)).toBe(null);
         });
 
         test('altering password hashes', async () => {
-            const user = {id: 'testuser3', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
-            await database.addUser(user);
+            const user = {name: 'testuser3', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
+            const id = await database.addUser(user);
 
-            await database.updatePasswordHash(user.id, 'newhash');
-            const updatedUser = await database.getUserByID(user.id);
+            await database.updatePasswordHash(id, 'newhash');
+            const updatedUser = await database.getUserByID(id);
             expect(updatedUser?.passwordHash).toBe('newhash');
+        });
+
+        test('altering usernames', async () => {
+            const user = {name: 'oldname', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
+            const id = await database.addUser(user);
+
+            await database.updateUsername(id, 'newname');
+            const updatedUser = await database.getUserByID(id);
+            expect(updatedUser?.name).toBe('newname');
         });
 
         test('searching for users by IP address', async () => {
             const users = [
-                {id: 'testuser4', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.3.4'},
-                {id: 'testuser5', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.3.63'},
-                {id: 'testuser6', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.8.6'},
-                {id: 'testuser7', passwordHash: 'hunter2', registrationTime: 1, ip: '2.1.1.1'},
+                {name: 'testuser4', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.3.4'},
+                {name: 'testuser5', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.3.63'},
+                {name: 'testuser6', passwordHash: 'hunter2', registrationTime: 1, ip: '1.2.8.6'},
+                {name: 'testuser7', passwordHash: 'hunter2', registrationTime: 1, ip: '2.1.1.1'},
             ];
             for (const user of users) {
                 await database.addUser(user);
@@ -47,9 +56,9 @@ describe.each(wrappers)('%s', (database) => {
             expect(await database.getUsersByIP('1.2.*')).toEqual([users[0], users[1], users[2]]);
         });
 
-        test('only one user should be allowed for a given ID', async () => {
-            const user = {id: 'testuser1', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
-            const user2 = {id: 'testuser1', passwordHash: 'nothunter2', registrationTime: 65, ip: '127.0.0.2'};
+        test('only one user should be allowed for a given name', async () => {
+            const user = {name: 'testuser1', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};
+            const user2 = {name: 'testuser1', passwordHash: 'nothunter2', registrationTime: 65, ip: '127.0.0.2'};
 
             await database.addUser(user);
             await expect(database.addUser(user2)).rejects.toThrow(/already exists/);
@@ -57,38 +66,37 @@ describe.each(wrappers)('%s', (database) => {
     });
 
     describe('tokens', () => {
+        let userID: number;
         beforeAll(async () => {
-            await database.addUser({id: 'tokentest', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'});
+            userID = await database.addUser({
+                name: 'tokentest', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1',
+            });
         });
         beforeEach(async () => {
-            await database.deleteAllTokens('tokentest');
-        });
-
-        test('disallow adding tokens for nonexistent users', async () => {
-            await expect(database.addToken('not a real user ID', 'token', 1)).rejects.toThrow(/user .* does not exist/);
+            await database.deleteAllTokens(userID);
         });
 
         test('adding and retrieving tokens', async () => {
-            await database.addToken('tokentest', 'valid token', Date.now() + 10000);
-            await database.addToken('tokentest', 'another valid token', Date.now() + 10000);
+            await database.addToken(userID, 'valid token', Date.now() + 10000);
+            await database.addToken(userID, 'another valid token', Date.now() + 10000);
 
-            expect(await database.getUserTokens('tokentest')).toEqual(new Set(['another valid token', 'valid token']));
+            expect(await database.getUserTokens(userID)).toEqual(new Set(['another valid token', 'valid token']));
         });
 
         test('expired tokens should not be included in #getUserTokens()', async () => {
-            await database.addToken('tokentest', 'valid token', Date.now() + 10000);
-            await database.addToken('tokentest', 'expired token', Date.now() - 1);
+            await database.addToken(userID, 'valid token', Date.now() + 10000);
+            await database.addToken(userID, 'expired token', Date.now() - 1);
 
-            expect(await database.getUserTokens('tokentest')).toEqual(new Set(['valid token']));
+            expect(await database.getUserTokens(userID)).toEqual(new Set(['valid token']));
         });
 
         test('removing tokens', async () => {
-            await database.addToken('tokentest', 'valid token', Date.now() + 10000);
-            await database.addToken('tokentest', 'another valid token', Date.now() + 10000);
-            await database.addToken('tokentest', 'expired token', Date.now() - 1);
+            await database.addToken(userID, 'valid token', Date.now() + 10000);
+            await database.addToken(userID, 'another valid token', Date.now() + 10000);
+            await database.addToken(userID, 'expired token', Date.now() - 1);
 
-            await database.deleteAllTokens('tokentest');
-            const tokens = await database.getUserTokens('tokentest');
+            await database.deleteAllTokens(userID);
+            const tokens = await database.getUserTokens(userID);
             expect(tokens.size).toBe(0);
         });
     });

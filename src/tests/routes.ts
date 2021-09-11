@@ -2,7 +2,7 @@
  * Overall server tests
  */
 
-jest.mock('../config-loader', () => ({
+jest.mock('../config', () => ({
     config: {databasePath: ':memory:', port: -1, tokenTTL: 100000, listenAddress: '127.0.0.1'},
 }));
 import {createServer} from '../routes';
@@ -17,13 +17,16 @@ describe('Krytis reference authentication server', () => {
             url: '/users',
             query: {username: 'testuser', password: 'hunter2'},
         });
-        expect(JSON.parse(userResponse.body)).toEqual({success: true});
+        const userid = JSON.parse(userResponse.body).id;
+        expect(userid).toEqual(expect.any(Number));
+        expect(userid).toBeGreaterThanOrEqual(0);
+        expect(Math.floor(userid)).toBe(userid);
 
         // authenticate user
         const loginResponse = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'testuser', password: 'hunter2'},
+            query: {userid, password: 'hunter2'},
         });
         const loginJSON = JSON.parse(loginResponse.body);
         expect(loginJSON).toHaveProperty('token');
@@ -33,7 +36,7 @@ describe('Krytis reference authentication server', () => {
         const validationSuccessResponse = await server.inject({
             method: 'POST',
             url: '/validatetoken',
-            query: {username: 'testuser', token},
+            query: {userid, token},
         });
         expect(JSON.parse(validationSuccessResponse.body)).toEqual({valid: true});
 
@@ -41,7 +44,7 @@ describe('Krytis reference authentication server', () => {
         const validationFailureResponse = await server.inject({
             method: 'POST',
             url: '/validatetoken',
-            query: {username: 'testuser', token: 'not a valid token'},
+            query: {userid, token: 'not a valid token'},
         });
         expect(JSON.parse(validationFailureResponse.body)).toEqual({valid: false});
 
@@ -49,21 +52,21 @@ describe('Krytis reference authentication server', () => {
         const logoutResponse = await server.inject({
             method: 'POST',
             url: '/logout',
-            query: {username: 'testuser', token},
+            query: {userid, token},
         });
         expect(JSON.parse(logoutResponse.body)).toEqual({success: true});
         // after logout, should no longer validate token...
         const validationAfterLogoutResponse = await server.inject({
             method: 'POST',
             url: '/validatetoken',
-            query: {username: 'testuser', token},
+            query: {userid, token},
         });
         expect(JSON.parse(validationAfterLogoutResponse.body)).toEqual({valid: false});
         // but should be able to authenticate again
         const loginAgainResponse = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'testuser', password: 'hunter2'},
+            query: {userid, password: 'hunter2'},
         });
         expect(JSON.parse(loginAgainResponse.body)).toHaveProperty('token');
     });
@@ -77,13 +80,13 @@ describe('Krytis reference authentication server', () => {
             url: '/users',
             query: {username: 'passwordchangeuser', password: 'initial password'},
         });
-        expect(JSON.parse(userResponse.body)).toEqual({success: true});
+        const userid = JSON.parse(userResponse.body).id;
 
         // change password
         const pwChangeResponse = await server.inject({
             method: 'POST',
             url: '/changepassword',
-            query: {username: 'passwordchangeuser', oldPassword: 'initial password', newPassword: 'new password'},
+            query: {userid, oldPassword: 'initial password', newPassword: 'new password'},
         });
         expect(JSON.parse(pwChangeResponse.body)).toEqual({success: true});
 
@@ -91,7 +94,7 @@ describe('Krytis reference authentication server', () => {
         const oldPWLoginResponse = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'passwordchangeuser', password: 'initial password'},
+            query: {userid, password: 'initial password'},
         });
         expect(JSON.parse(oldPWLoginResponse.body)).not.toHaveProperty('token');
 
@@ -99,7 +102,7 @@ describe('Krytis reference authentication server', () => {
         const newPWLoginResponse = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'passwordchangeuser', password: 'new password'},
+            query: {userid, password: 'new password'},
         });
         expect(JSON.parse(newPWLoginResponse.body)).toHaveProperty('token');
     });
@@ -113,21 +116,21 @@ describe('Krytis reference authentication server', () => {
             url: '/users',
             query: {username: 'usertodelete', password: 'hunter2'},
         });
-        expect(JSON.parse(userResponse.body)).toEqual({success: true});
+        const userid = JSON.parse(userResponse.body).id;
 
         // should authenticate
         const beforeDeletion = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'usertodelete', password: 'hunter2'},
+            query: {userid, password: 'hunter2'},
         });
         expect(JSON.parse(beforeDeletion.body)).toHaveProperty('token');
 
         // delete user
         const deletionResponse = await server.inject({
             method: 'DELETE',
-            url: '/users/usertodelete',
-            query: {username: 'usertodelete', password: 'hunter2'},
+            url: `/users/${userid as number}`,
+            query: {password: 'hunter2'},
         });
         expect(JSON.parse(deletionResponse.body)).toEqual({success: true});
 
@@ -135,8 +138,26 @@ describe('Krytis reference authentication server', () => {
         const afterDeletion = await server.inject({
             method: 'POST',
             url: '/login',
-            query: {username: 'usertodelete', password: 'hunter2'},
+            query: {userid, password: 'hunter2'},
         });
         expect(JSON.parse(afterDeletion.body)).not.toHaveProperty('token');
+    });
+
+    test(`getting a user's ID`, async () => {
+        const server = await createServer();
+
+        // create user
+        const userResponse = await server.inject({
+            method: 'POST',
+            url: '/users',
+            query: {username: 'myuser', password: 'hunter2'},
+        });
+        const userid = JSON.parse(userResponse.body).id;
+
+        const idResponse = await server.inject({
+            method: 'GET',
+            url: '/users/myuser',
+        });
+        expect(JSON.parse(idResponse.body)).toEqual({id: userid});
     });
 });

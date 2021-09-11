@@ -3,7 +3,7 @@
  */
 
 export interface UserData {
-    id: string;
+    name: string;
     passwordHash: string;
     /** UNIX time in milliseconds */
     registrationTime: number;
@@ -12,19 +12,21 @@ export interface UserData {
 
 /** Abstract database interface, which can be implemented inn SQLite, Postgres, etc */
 export interface Database {
-    addUser(data: UserData): Promise<void>;
-    deleteUser(username: string): Promise<void>;
+    addUser(data: UserData): Promise<number>;
+    deleteUser(userid: number): Promise<void>;
 
     // there should be no need to alter registration time or IP address
-    updatePasswordHash(username: string, newHash: string): Promise<void>;
+    updatePasswordHash(userid: number, newHash: string): Promise<void>;
+    updateUsername(userid: number, newName: string): Promise<void>;
 
-    getUserByID(username: string): Promise<UserData | null>;
+    getUserByID(userid: number): Promise<UserData | null>;
     /** should accept IPs (127.0.0.1) and IP ranges (127.0.*) */
     getUsersByIP(ip: string): Promise<UserData[]>;
+    getUserID(username: string): Promise<number | null>;
 
-    addToken(username: string, token: string, expiresAt: number): Promise<void>;
-    getUserTokens(username: string): Promise<Set<string>>;
-    deleteAllTokens(username: string): Promise<void>;
+    addToken(userid: number, token: string, expiresAt: number): Promise<void>;
+    getUserTokens(userid: number): Promise<Set<string>>;
+    deleteAllTokens(userid: number): Promise<void>;
 }
 
 export {SQLiteDatabase} from './sqlite';

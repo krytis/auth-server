@@ -25,21 +25,19 @@ export class AuthenticationAPI {
         this.tokenSize = tokenSize;
     }
 
-    async createUser(id: string, password: string, ip: string) {
-        if (await this.database.getUserByID(id)) throw new PublicFacingError(`User ${id} already exists`);
-
+    async createUser(name: string, password: string, ip: string) {
         const passwordHash = await AuthenticationAPI.hashPassword(password);
-        await this.database.addUser({id, passwordHash, registrationTime: Date.now(), ip});
-        return {success: true};
+        const id = await this.database.addUser({name, passwordHash, registrationTime: Date.now(), ip});
+        return {id};
     }
 
-    async deleteUser(id: string, password: string) {
+    async deleteUser(id: number, password: string) {
         await this.checkPassword(id, password);
         await this.database.deleteUser(id);
         return {success: true};
     }
 
-    async createToken(id: string, password: string) {
+    async createToken(id: number, password: string) {
         await this.checkPassword(id, password);
 
         const token = await this.generateToken();
@@ -49,40 +47,45 @@ export class AuthenticationAPI {
         return {token, expiresAt};
     }
 
+    async getUserID(username: string) {
+        const id = await this.database.getUserID(username);
+        return id ? {id} : {error: `User ${username} does not exist`};
+    }
+
     // logout
-    async deleteAllTokens(username: string, token: string) {
-        await this.checkToken(username, token);
-        await this.database.deleteAllTokens(username);
+    async deleteAllTokens(id: number, token: string) {
+        await this.checkToken(id, token);
+        await this.database.deleteAllTokens(id);
         return {success: true};
     }
 
-    async changePassword(username: string, oldPassword: string, newPassword: string) {
-        await this.checkPassword(username, oldPassword);
+    async changePassword(id: number, oldPassword: string, newPassword: string) {
+        await this.checkPassword(id, oldPassword);
         const newHash = await AuthenticationAPI.hashPassword(newPassword);
-        await this.database.updatePasswordHash(username, newHash);
+        await this.database.updatePasswordHash(id, newHash);
         return {success: true};
     }
 
-    async checkToken(username: string, token: string) {
-        const tokens = await this.database.getUserTokens(username);
+    async checkToken(id: number, token: string) {
+        const tokens = await this.database.getUserTokens(id);
         if (!tokens.has(token)) throw new PublicFacingError('Incorrect username/token');
     }
 
-    async validateToken(username: string, token: string) {
+    async validateToken(id: number, token: string) {
         try {
-            await this.checkToken(username, token);
+            await this.checkToken(id, token);
             return {valid: true};
         } catch {
             return {valid: false};
         }
     }
 
-    async checkPassword(username: string, password: string) {
-        const user = await this.database.getUserByID(username);
-        if (!user) throw new PublicFacingError('Incorrect username/password');
+    async checkPassword(userid: number, password: string) {
+        const user = await this.database.getUserByID(userid);
+        if (!user) throw new PublicFacingError('Incorrect userid/password');
 
         const isValid = await argon2.verify(user.passwordHash, password);
-        if (!isValid) throw new PublicFacingError('Incorrect username/password');
+        if (!isValid) throw new PublicFacingError('Incorrect userid/password');
     }
 
     private async generateToken(): Promise<string> {

@@ -13,15 +13,18 @@ export class SQLiteDatabase implements Database {
     private readonly database: SQLite.Database;
 
     private readonly addUserQuery: SQLite.Statement<[string, string, number, string]>;
-    private readonly deleteUserQuery: SQLite.Statement<string>;
-    private readonly updatePasswordQuery: SQLite.Statement<[string, string]>;
-    private readonly getUserByIDQuery: SQLite.Statement<string>;
+    private readonly deleteUserQuery: SQLite.Statement<number>;
+    private readonly updatePasswordQuery: SQLite.Statement<[string, number]>;
+    private readonly updateUsernameQuery: SQLite.Statement<[string, number]>;
+
+    private readonly getUserByIDQuery: SQLite.Statement<number>;
     private readonly getUsersByIPQuery: SQLite.Statement<string>;
     private readonly getUsersByIPRangeQuery: SQLite.Statement<string>;
+    private readonly getUserIDQuery: SQLite.Statement<string>;
 
-    private readonly addTokenQuery: SQLite.Statement<[string, string, number]>;
-    private readonly getTokensQuery: SQLite.Statement<string>;
-    private readonly deleteTokensForUserQuery: SQLite.Statement<string>;
+    private readonly addTokenQuery: SQLite.Statement<[number, string, number]>;
+    private readonly getTokensQuery: SQLite.Statement<number>;
+    private readonly deleteTokensForUserQuery: SQLite.Statement<number>;
     private readonly deleteSingleTokenQuery: SQLite.Statement<string>;
     private readonly getTokensTransaction: SQLite.Transaction;
 
@@ -41,22 +44,25 @@ export class SQLiteDatabase implements Database {
         }
 
         this.addUserQuery = this.database.prepare(
-            'INSERT INTO users (id, password_hash, registered_at, registration_ip) VALUES (?, ?, ?, ?)'
+            'INSERT INTO users (name, password_hash, registered_at, registration_ip) ' +
+            'VALUES (?, ?, ?, ?) RETURNING user_id'
         );
-        this.deleteUserQuery = this.database.prepare('DELETE FROM users WHERE id = ?');
-        this.updatePasswordQuery = this.database.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
-        this.getUserByIDQuery = this.database.prepare('SELECT * FROM users WHERE id = ?');
+        this.deleteUserQuery = this.database.prepare('DELETE FROM users WHERE user_id = ?');
+        this.updatePasswordQuery = this.database.prepare('UPDATE users SET password_hash = ? WHERE user_id = ?');
+        this.updateUsernameQuery = this.database.prepare('UPDATE users SET name = ? WHERE user_id = ?');
+        this.getUserByIDQuery = this.database.prepare('SELECT * FROM users WHERE user_id = ?');
         this.getUsersByIPQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip = ?');
         this.getUsersByIPRangeQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip LIKE ?');
+        this.getUserIDQuery = this.database.prepare('SELECT user_id FROM users WHERE name = ?');
 
         this.addTokenQuery = this.database.prepare('INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)');
         this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE user_id = ?');
         this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE user_id = ?');
         this.deleteSingleTokenQuery = this.database.prepare('DELETE FROM tokens WHERE token = ?');
 
-        this.getTokensTransaction = this.database.transaction((username: string) => {
+        this.getTokensTransaction = this.database.transaction((userid: number) => {
             const tokens: Set<string> = new Set();
-            const results = this.getTokensQuery.all(username);
+            const results = this.getTokensQuery.all(userid);
 
             for (const {token, expires_at} of results) {
                 if (expires_at < Date.now()) {
@@ -72,30 +78,36 @@ export class SQLiteDatabase implements Database {
 
     addUser(data: UserData) {
         try {
-            this.addUserQuery.run(data.id, data.passwordHash, data.registrationTime, data.ip);
+            const {user_id} = this.addUserQuery.get(data.name, data.passwordHash, data.registrationTime, data.ip);
+            return Promise.resolve(user_id);
         } catch (err: any) {
             if (err.code.startsWith('SQLITE_CONSTRAINT')) {
-                return Promise.reject(new PublicFacingError(`User ${data.id} already exists`));
+                return Promise.reject(new PublicFacingError(`User ${data.name} already exists`));
             }
             return Promise.reject(err);
         }
+    }
+
+    deleteUser(userid: number) {
+        const res = this.deleteUserQuery.run(userid);
+        if (res.changes === 0) throw new PublicFacingError(`User ${userid} does not exist`);
         return Promise.resolve();
     }
 
-    deleteUser(username: string) {
-        const res = this.deleteUserQuery.run(username);
-        if (res.changes === 0) throw new PublicFacingError(`User ${username} does not exist`);
+    updatePasswordHash(userid: number, passwordHash: string) {
+        const res = this.updatePasswordQuery.run(passwordHash, userid);
+        if (res.changes === 0) return Promise.reject(new PublicFacingError(`User ${userid} does not exist`));
         return Promise.resolve();
     }
 
-    updatePasswordHash(username: string, passwordHash: string) {
-        const res = this.updatePasswordQuery.run(passwordHash, username);
-        if (res.changes === 0) return Promise.reject(new PublicFacingError(`User ${username} does not exist`));
+    updateUsername(userid: number, newName: string) {
+        const res = this.updateUsernameQuery.run(newName, userid);
+        if (res.changes === 0) return Promise.reject(new PublicFacingError(`User ${userid} does not exist`));
         return Promise.resolve();
     }
 
-    getUserByID(username: string): Promise<UserData | null> {
-        const res = this.getUserByIDQuery.get(username);
+    getUserByID(userid: number): Promise<UserData | null> {
+        const res = this.getUserByIDQuery.get(userid);
         return Promise.resolve(res ? SQLiteDatabase.rowToUserData(res) : null);
     }
 
@@ -106,24 +118,29 @@ export class SQLiteDatabase implements Database {
         return Promise.resolve(res.map(SQLiteDatabase.rowToUserData));
     }
 
-    addToken(username: string, token: string, expiresAt: number) {
+    getUserID(username: string): Promise<number | null> {
+        const res = this.getUserIDQuery.get(username);
+        return Promise.resolve(res ? res.user_id : null);
+    }
+
+    addToken(userid: number, token: string, expiresAt: number) {
         try {
-            this.addTokenQuery.run(username, token, expiresAt);
+            this.addTokenQuery.run(userid, token, expiresAt);
         } catch (err: any) {
             if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
-                return Promise.reject(new PublicFacingError(`The user ${username} does not exist`));
+                return Promise.reject(new PublicFacingError(`The user ${userid} does not exist`));
             }
             return Promise.reject(err);
         }
         return Promise.resolve();
     }
 
-    getUserTokens(username: string): Promise<Set<string>> {
-        return Promise.resolve(this.getTokensTransaction(username));
+    getUserTokens(userid: number): Promise<Set<string>> {
+        return Promise.resolve(this.getTokensTransaction(userid));
     }
 
-    deleteAllTokens(username: string) {
-        this.deleteTokensForUserQuery.run(username);
+    deleteAllTokens(userid: number) {
+        this.deleteTokensForUserQuery.run(userid);
         return Promise.resolve();
     }
 
@@ -133,7 +150,7 @@ export class SQLiteDatabase implements Database {
 
     private static rowToUserData(row: any): UserData {
         return {
-            id: row.id,
+            name: row.name,
             passwordHash: row.password_hash,
             registrationTime: row.registered_at,
             ip: row.registration_ip,
