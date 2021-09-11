@@ -45,19 +45,19 @@ export class SQLiteDatabase implements Database {
 
         this.addUserQuery = this.database.prepare(
             'INSERT INTO users (name, password_hash, registered_at, registration_ip) ' +
-            'VALUES (?, ?, ?, ?) RETURNING user_id'
+            'VALUES (?, ?, ?, ?) RETURNING id'
         );
-        this.deleteUserQuery = this.database.prepare('DELETE FROM users WHERE user_id = ?');
-        this.updatePasswordQuery = this.database.prepare('UPDATE users SET password_hash = ? WHERE user_id = ?');
-        this.updateUsernameQuery = this.database.prepare('UPDATE users SET name = ? WHERE user_id = ?');
-        this.getUserByIDQuery = this.database.prepare('SELECT * FROM users WHERE user_id = ?');
+        this.deleteUserQuery = this.database.prepare('DELETE FROM users WHERE id = ?');
+        this.updatePasswordQuery = this.database.prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+        this.updateUsernameQuery = this.database.prepare('UPDATE users SET name = ? WHERE id = ?');
+        this.getUserByIDQuery = this.database.prepare('SELECT * FROM users WHERE id = ?');
         this.getUsersByIPQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip = ?');
         this.getUsersByIPRangeQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip LIKE ?');
-        this.getUserIDQuery = this.database.prepare('SELECT user_id FROM users WHERE name = ?');
+        this.getUserIDQuery = this.database.prepare('SELECT id FROM users WHERE name = ?');
 
-        this.addTokenQuery = this.database.prepare('INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)');
-        this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE user_id = ?');
-        this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE user_id = ?');
+        this.addTokenQuery = this.database.prepare('INSERT INTO tokens (id, token, expires_at) VALUES (?, ?, ?)');
+        this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE id = ?');
+        this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE id = ?');
         this.deleteSingleTokenQuery = this.database.prepare('DELETE FROM tokens WHERE token = ?');
 
         this.getTokensTransaction = this.database.transaction((userid: number) => {
@@ -78,8 +78,8 @@ export class SQLiteDatabase implements Database {
 
     addUser(data: UserData) {
         try {
-            const {user_id} = this.addUserQuery.get(data.name, data.passwordHash, data.registrationTime, data.ip);
-            return Promise.resolve(user_id);
+            const {id} = this.addUserQuery.get(data.name, data.passwordHash, data.registrationTime, data.ip);
+            return Promise.resolve(id);
         } catch (err: any) {
             if (err.code.startsWith('SQLITE_CONSTRAINT')) {
                 return Promise.reject(new PublicFacingError(`User ${data.name} already exists`));
@@ -120,7 +120,7 @@ export class SQLiteDatabase implements Database {
 
     getUserID(username: string): Promise<number | null> {
         const res = this.getUserIDQuery.get(username);
-        return Promise.resolve(res ? res.user_id : null);
+        return Promise.resolve(res ? res.id : null);
     }
 
     addToken(userid: number, token: string, expiresAt: number) {

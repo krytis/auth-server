@@ -35,9 +35,6 @@
   "eslintConfig": {
     "extends": "@pkmn",
     "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "project": ["./tsconfig.json", "./tsconfig-unittest.json"]
-    },
     "rules": {
         "@typescript-eslint/indent": ["error", 4],
         "@typescript-eslint/unbound-method": ["error", {"ignoreStatic": true}],
