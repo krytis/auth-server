@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-        "noEmit": true,
-        "downlevelIteration": true,
-        "strict": true,
-    },
-    "include": ["**/tests/**/*.ts"]
-}

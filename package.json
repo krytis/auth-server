@@ -8,16 +8,9 @@
     "build": "tsc",
     "start": "npm run build && node -r dotenv/config dist/app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/krytis/auth-server.git"
-  },
+  "repository": "github:krytis/auth-server",
   "author": "Annika L. <annika0uwu@gmail.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/krytis/auth-server/issues"
-  },
-  "homepage": "https://github.com/krytis/auth-server#readme",
   "dependencies": {
     "@types/better-sqlite3": "^7.4.0",
     "argon2": "^0.28.2",
@@ -38,5 +31,28 @@
     "eslint-plugin-jest": "^24.4.0",
     "jest": "^27.1.0",
     "ts-jest": "^27.0.5"
+  },
+  "eslintConfig": {
+    "extends": "@pkmn",
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "project": ["./tsconfig.json", "./tsconfig-unittest.json"]
+    },
+    "rules": {
+        "@typescript-eslint/indent": ["error", 4],
+        "@typescript-eslint/unbound-method": ["error", {"ignoreStatic": true}],
+        "@typescript-eslint/quotes": ["error", "single", {"allowTemplateLiterals": true}],
+        "max-len": ["error", {"code": 120}]
+    }
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageProvider": "v8",
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/*.ts"],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    }
   }
 }

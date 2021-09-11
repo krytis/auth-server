@@ -30,8 +30,8 @@ npm start
 `auth-server` does not provide HTTPS support; in production environments, it should always be run behind a reverse proxy that is configured to use SSL.
 
 ## API
-The authentication server exposes the following endpoints, all via HTTP `POST` requests with the parameters specified in a query string (e.g. `POST https://my.authserv.er/endpoint?param1=value1&param2=value2`):
-### `/createuser`
+The authentication server exposes the following endpoints, via HTTP requests with the parameters specified in a query string (e.g. `POST https://my.authserv.er/endpoint?param1=value1&param2=value2`):
+### `POST /users`
 Creates a new user.
 #### Required parameters
 - `username`: the username of the user to be created. Note that usernames are case-sensitive and can include non-alphanumeric characters.
@@ -40,16 +40,15 @@ Creates a new user.
 - `{"success": true}` or equivalent JSON on success
 - `{"error": "User <username> already exists"}` or equivalent JSON if a user by the same name already exists
 
-### `/deleteuser`
-Deletes an existing user.
+### `DELETE /users/<id>`
+Deletes the user identified by the `<id>`.
 #### Required parameters
-- `username`: the username of the user to delete
 - `password`: the user's password
 #### Response
 - `{"success": true}` or equivalent JSON on success
 - `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
 
-### `/changepassword`
+### `POST /changepassword`
 Changes a user's password.
 #### Required parameters
 - `username`: the username of the user whose password is being changed
@@ -59,7 +58,7 @@ Changes a user's password.
 - `{"success": true}` or equivalent JSON on success
 - `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
 
-### `/login`
+### `POST /login`
 Logs in, returning an authentication token.
 #### Required parameters
 - `username`: the username of the user to log in as
@@ -68,7 +67,7 @@ Logs in, returning an authentication token.
 - `{"token": <token>, "expiresAt": <timestamp>}` or equivalent JSON on success, where `<token>` is an authentication token (long random string) that can be used on other API endpoints, and `<timestamp>` is the number of milliseconds since the UNIX epoch at which the token expires
 - `{"error": "Incorrect username/password"}` or equivalent JSON if the username/password pair is not correct (including if the user doesn't exist)
 
-### `/logout`
+### `POST /logout`
 Logs out, invalidating all tokens for a user.
 #### Required parameters
 - `username`: the username of the user to log out from
@@ -77,7 +76,7 @@ Logs out, invalidating all tokens for a user.
 - `{"success": true}` or equivalent JSON on success
 - `{"error": "Incorrect username/token"}` or equivalent JSON if the username/token pair is not correct (including if the user doesn't exist)
 
-### `/validatetoken`
+### `POST /validatetoken`
 Checks if a user/token pair is valid.
 #### Required parameters
 - `username`: the username of the user to validate

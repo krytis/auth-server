@@ -11,6 +11,14 @@ export const usernamePasswordSchema = {
     required: ['username', 'password'],
 } as const;
 
+export const passwordOnlySchema = {
+    type: 'object',
+    properties: {
+        password: {type: 'string'},
+    },
+    required: ['password'],
+} as const;
+
 export const usernameTokenSchema = {
     type: 'object',
     properties: {
@@ -29,4 +37,3 @@ export const passwordChangeSchema = {
     },
     required: ['username', 'newPassword', 'oldPassword'],
 } as const;
-

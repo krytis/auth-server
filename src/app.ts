@@ -1,5 +1,5 @@
 // Index file
-import {config} from './config-loader';
+import {config} from './config';
 import {startServer} from './routes';
 
 // TODO:

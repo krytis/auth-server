@@ -14,7 +14,7 @@ describe('Krytis reference authentication server', () => {
         // create user
         const userResponse = await server.inject({
             method: 'POST',
-            url: '/createuser',
+            url: '/users',
             query: {username: 'testuser', password: 'hunter2'},
         });
         expect(JSON.parse(userResponse.body)).toEqual({success: true});
@@ -74,7 +74,7 @@ describe('Krytis reference authentication server', () => {
         // create user
         const userResponse = await server.inject({
             method: 'POST',
-            url: '/createuser',
+            url: '/users',
             query: {username: 'passwordchangeuser', password: 'initial password'},
         });
         expect(JSON.parse(userResponse.body)).toEqual({success: true});
@@ -110,7 +110,7 @@ describe('Krytis reference authentication server', () => {
         // create user
         const userResponse = await server.inject({
             method: 'POST',
-            url: '/createuser',
+            url: '/users',
             query: {username: 'usertodelete', password: 'hunter2'},
         });
         expect(JSON.parse(userResponse.body)).toEqual({success: true});
@@ -125,8 +125,8 @@ describe('Krytis reference authentication server', () => {
 
         // delete user
         const deletionResponse = await server.inject({
-            method: 'POST',
-            url: '/deleteuser',
+            method: 'DELETE',
+            url: '/users/usertodelete',
             query: {username: 'usertodelete', password: 'hunter2'},
         });
         expect(JSON.parse(deletionResponse.body)).toEqual({success: true});

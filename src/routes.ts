@@ -8,18 +8,17 @@ import type {FastifyError} from 'fastify-error';
 import type {FromSchema} from 'json-schema-to-ts';
 
 import {AuthenticationAPI} from './api';
-import {config} from './config-loader';
+import {config} from './config';
 import {SQLiteDatabase} from './database';
-import {passwordChangeSchema, usernamePasswordSchema, usernameTokenSchema} from './schemas';
+import {passwordChangeSchema, passwordOnlySchema, usernamePasswordSchema, usernameTokenSchema} from './schemas';
 
 function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
     if (error.name === 'PublicFacingError') {
-        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-        reply.send({error: error.message});
+        return reply.send({error: error.message});
     } else {
         console.error(`ERROR: ${error.stack as string}`);
         /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-        reply.status(500).send({error: 'Unknown error'});
+        return reply.status(500).send({error: 'Unknown error'});
     }
 }
 
@@ -27,14 +26,14 @@ function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done:
     const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL);
 
     server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
-        '/createuser',
+        '/users',
         {schema: {querystring: usernamePasswordSchema}},
         async request => api.createUser(request.query.username, request.query.password, request.ip)
     );
-    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
-        '/deleteuser',
-        {schema: {querystring: usernamePasswordSchema}},
-        async request => api.deleteUser(request.query.username, request.query.password)
+    server.delete<{Querystring: FromSchema<typeof passwordOnlySchema>; Params: {id: string}}>(
+        '/users/:id',
+        {schema: {querystring: passwordOnlySchema, params: {id: {type: 'string'}}}},
+        async request => api.deleteUser(request.params.id, request.query.password)
     );
     server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/login',
