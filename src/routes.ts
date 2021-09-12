@@ -15,14 +15,12 @@ import {
     usernamePasswordSchema, userIDTokenSchema,
 } from './schemas';
 
-function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
+async function errorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
     if (error.name === 'PublicFacingError') {
-        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-        reply.send({error: error.message});
+        await reply.send({error: error.message});
     } else {
         console.error(`ERROR: ${error.stack as string}`);
-        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-        reply.status(500).send({error: 'Unknown error'});
+        await reply.status(500).send({error: 'Unknown error'});
     }
 }
 
@@ -82,6 +80,8 @@ function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done:
 
 export async function createServer() {
     const server = fastify();
+    // This is a bug in Fastify's types; see https://github.com/fastify/fastify/pull/3309
+    /* eslint-disable @typescript-eslint/no-misused-promises */
     server.setErrorHandler(errorHandler);
     await server.register(addRoutes);
     return server;
