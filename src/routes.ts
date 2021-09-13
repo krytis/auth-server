@@ -2,9 +2,8 @@
 
 import fastify, {
     FastifyInstance, FastifyPluginOptions, FastifyReply,
-    FastifyRequest, HookHandlerDoneFunction,
+    FastifyRequest, HookHandlerDoneFunction, FastifyError,
 } from 'fastify';
-import type {FastifyError} from 'fastify-error';
 import type {FromSchema} from 'json-schema-to-ts';
 
 import {AuthenticationAPI} from './api';
