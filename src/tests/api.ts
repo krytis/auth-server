@@ -41,13 +41,13 @@ describe('AuthenticationAPI', () => {
     test('user deletion', async () => {
         // user exists & password can be verified
         await expect(api.checkPassword(userID, password)).resolves.not.toThrow();
-        expect(await database.getUserByID(userID)).not.toBe(null);
+        expect(await database.getUserByID(userID)).not.toBeNull();
 
         await api.deleteUser(userID, password);
 
         // user does not exist & password can't be verified
         await expect(api.checkPassword(userID, password)).rejects.toThrow();
-        expect(await database.getUserByID(userID)).toBe(null);
+        expect(await database.getUserByID(userID)).toBeNull();
     });
 
     describe('tokens', () => {

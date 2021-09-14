@@ -19,7 +19,7 @@ describe.each(wrappers)('%s', (database) => {
             expect(await database.getUserID(user.name)).toBe(id);
 
             await database.deleteUser(id);
-            expect(await database.getUserByID(id)).toBe(null);
+            expect(await database.getUserByID(id)).toBeNull();
         });
 
         test('altering password hashes', async () => {
