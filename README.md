@@ -39,10 +39,10 @@ Creates a new user.
 - `password`: the password to use for the user
 #### Response
 - `{"id": <id>}` or equivalent JSON on success, where `<id>` is a user's numerical ID (which can be used for other API endpoints)
-- `{"error": "User <name> already exists"}` or equivalent JSON if the user already exists
+- `{"error": "User <username> already exists"}` or equivalent JSON if the user already exists
 
 ### `GET /users/<id>`
-Gets the name of the user with the username `<id>`.
+Gets the name of the user with the user ID `<id>`.
 #### Required parameters
 None!
 #### Response
