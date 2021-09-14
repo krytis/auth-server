@@ -19,6 +19,8 @@ export interface Config {
     databasePath: string;
     /** The time, in milliseconds, a token should be valid for. Defaults to 60480000 (one week). */
     tokenTTL: number;
+    /** The size, in bytes, of a token. Defaults to 32. */
+    tokenSize: number;
     /** The IP address that the server should listen on. Defaults to 127.0.0.1. */
     listenAddress: string;
 }
@@ -42,11 +44,18 @@ function loadConfig(): Config {
         throw new Error(`The database specified in DATABASE_PATH must be in a directory that exists.`);
     }
 
-    const config: Config = {port, databasePath, tokenTTL: 60480000, listenAddress: '127.0.0.1'};
+    const config: Config = {port, databasePath, tokenTTL: 60480000, tokenSize: 32, listenAddress: '127.0.0.1'};
     if (process.env.TOKEN_TTL) {
         config.tokenTTL = parseInt(process.env.TOKEN_TTL);
         if (isNaN(config.tokenTTL) || config.tokenTTL < 1) {
             throw new Error(`The environment variable TOKEN_TTL must be a positive integer if it is set.`);
+        }
+    }
+
+    if (process.env.TOKEN_SIZE) {
+        config.tokenSize = parseInt(process.env.TOKEN_SIZE);
+        if (isNaN(config.tokenSize) || config.tokenSize < 1) {
+            throw new Error(`The environment variable TOKEN_SIZE must be a positive integer if it is set.`);
         }
     }
 

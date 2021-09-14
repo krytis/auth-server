@@ -10,7 +10,7 @@ import {AuthenticationAPI} from './api';
 import {config} from './config';
 import {SQLiteDatabase} from './database';
 import {
-    passwordChangeSchema, passwordOnlySchema, userIDPasswordSchema,
+    passwordChangeSchema, passwordOnlySchema,
     usernamePasswordSchema, userIDTokenSchema,
 } from './schemas';
 
@@ -24,12 +24,12 @@ async function errorHandler(error: FastifyError, request: FastifyRequest, reply:
 }
 
 function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
-    const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL);
+    const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL, config.tokenSize);
 
-    server.get<{Params: {name: string}}>(
-        '/users/:name',
-        {schema: {params: {name: {type: 'string'}}}},
-        async request => api.getUserID(request.params.name),
+    server.get<{Params: {id: number}}>(
+        '/users/:id',
+        {schema: {params: {id: {type: 'number'}}}},
+        async request => api.getUserName(request.params.id),
     );
     server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/users',
@@ -41,21 +41,21 @@ function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done:
         {schema: {querystring: passwordOnlySchema, params: {id: {type: 'number'}}}},
         async request => api.deleteUser(request.params.id, request.query.password)
     );
-    server.post<{Querystring: FromSchema<typeof userIDPasswordSchema>}>(
+    server.post<{Querystring: FromSchema<typeof usernamePasswordSchema>}>(
         '/login',
-        {schema: {querystring: userIDPasswordSchema}},
-        async request => api.createToken(request.query.userid, request.query.password)
+        {schema: {querystring: usernamePasswordSchema}},
+        async request => api.createToken(request.query.username, request.query.password)
     );
     server.post<{Querystring: FromSchema<typeof userIDTokenSchema>}>(
         '/logout',
         {schema: {querystring: userIDTokenSchema}},
         async request => api.deleteAllTokens(request.query.userid, request.query.token)
     );
-    server.post<{Querystring: FromSchema<typeof passwordChangeSchema>}>(
-        '/changepassword',
-        {schema: {querystring: passwordChangeSchema}},
+    server.put<{Querystring: FromSchema<typeof passwordChangeSchema>; Params: {id: number}}>(
+        '/users/:id/password',
+        {schema: {querystring: passwordChangeSchema, params: {id: {type: 'number'}}}},
         async request => (
-            api.changePassword(request.query.userid, request.query.oldPassword, request.query.newPassword)
+            api.changePassword(request.params.id, request.query.oldPassword, request.query.newPassword)
         ),
     );
     server.post<{Querystring: FromSchema<typeof userIDTokenSchema>}>(

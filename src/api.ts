@@ -19,7 +19,7 @@ export class AuthenticationAPI {
     private readonly tokenTTL: number;
     private readonly tokenSize: number;
 
-    constructor(database: Database, tokenTTL: number, tokenSize = 32) {
+    constructor(database: Database, tokenTTL: number, tokenSize: number) {
         this.database = database;
         this.tokenTTL = tokenTTL;
         this.tokenSize = tokenSize;
@@ -37,19 +37,21 @@ export class AuthenticationAPI {
         return {success: true};
     }
 
-    async createToken(id: number, password: string) {
+    async createToken(username: string, password: string) {
+        const id = await this.database.getUserID(username);
+        if (!id) throw new PublicFacingError(`User ${username} does not exist`);
         await this.checkPassword(id, password);
 
         const token = await this.generateToken();
         const expiresAt = Date.now() + this.tokenTTL;
         await this.database.addToken(id, token, expiresAt);
 
-        return {token, expiresAt};
+        return {id, token, expiresAt};
     }
 
-    async getUserID(username: string) {
-        const id = await this.database.getUserID(username);
-        return id ? {id} : {error: `User ${username} does not exist`};
+    async getUserName(id: number) {
+        const user = await this.database.getUserByID(id);
+        return user ? {name: user.name} : {error: `User ${id} does not exist`};
     }
 
     // logout
@@ -82,10 +84,10 @@ export class AuthenticationAPI {
 
     async checkPassword(userid: number, password: string) {
         const user = await this.database.getUserByID(userid);
-        if (!user) throw new PublicFacingError('Incorrect userid/password');
+        if (!user) throw new PublicFacingError('Incorrect password');
 
         const isValid = await argon2.verify(user.passwordHash, password);
-        if (!isValid) throw new PublicFacingError('Incorrect userid/password');
+        if (!isValid) throw new PublicFacingError('Incorrect password');
     }
 
     private async generateToken(): Promise<string> {

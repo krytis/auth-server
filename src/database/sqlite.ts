@@ -32,10 +32,10 @@ export class SQLiteDatabase implements Database {
         this.database = new SQLite(databasePath);
         this.database.pragma('foreign_keys = ON');
 
-        const {hasDBInfo} = this.database
-            .prepare(`SELECT count(*) AS hasDBInfo FROM sqlite_master WHERE type = 'table' AND name = 'db_info'`)
+        const {hasUsers} = this.database
+            .prepare(`SELECT count(*) AS hasUsers FROM sqlite_master WHERE type = 'table' AND name = 'users'`)
             .get();
-        if (hasDBInfo === 0) {
+        if (hasUsers === 0) {
             // we need to set up the database
             const schemaLocation = path.resolve(__dirname, '..', '..', 'schemas', 'sqlite', 'users.sql');
             const schema = fs.readFileSync(schemaLocation).toString();
@@ -55,9 +55,9 @@ export class SQLiteDatabase implements Database {
         this.getUsersByIPRangeQuery = this.database.prepare('SELECT * FROM users WHERE registration_ip LIKE ?');
         this.getUserIDQuery = this.database.prepare('SELECT id FROM users WHERE name = ?');
 
-        this.addTokenQuery = this.database.prepare('INSERT INTO tokens (id, token, expires_at) VALUES (?, ?, ?)');
-        this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE id = ?');
-        this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE id = ?');
+        this.addTokenQuery = this.database.prepare('INSERT INTO tokens (user_id, token, expires_at) VALUES (?, ?, ?)');
+        this.getTokensQuery = this.database.prepare('SELECT token, expires_at FROM tokens WHERE user_id = ?');
+        this.deleteTokensForUserQuery = this.database.prepare('DELETE FROM tokens WHERE user_id = ?');
         this.deleteSingleTokenQuery = this.database.prepare('DELETE FROM tokens WHERE token = ?');
 
         this.getTokensTransaction = this.database.transaction((userid: number) => {

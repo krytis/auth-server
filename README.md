@@ -17,6 +17,7 @@ Within the cloned `auth-server/` directory, you should create a `.env` file that
 
 The following additional configuration may be specified, but have sane default values:
  - `TOKEN_TTL`: the time that an authentication token will be valid for, in milliseconds. Defaults to `60480000`, or one week.
+ - `TOKEN_SIZE`: the size, in **bytes**, of an authentication token. Defaults to `32`.
  - `LISTEN_ADDRESS`: the IP address that the server should listen on. Defaults to `127.0.0.1`, since the server is designed for use with a reverse proxy.
 
 ### Running
@@ -40,13 +41,13 @@ Creates a new user.
 - `{"id": <id>}` or equivalent JSON on success, where `<id>` is a user's numerical ID (which can be used for other API endpoints)
 - `{"error": "User <name> already exists"}` or equivalent JSON if the user already exists
 
-### `GET /users/<name>`
-Gets the ID of the user with the username `<name>`.
+### `GET /users/<id>`
+Gets the name of the user with the username `<id>`.
 #### Required parameters
 None!
 #### Response
-- `{"id": <id>}` or equivalent JSON on success, where `<id>` is a user's numerical ID
-- `{"error": "User <name> does not exist"}` or equivalent JSON if a user by the same name does not exist
+- `{"name": <name>}` or equivalent JSON on success, where `<name>` is a user's name
+- `{"error": "User <id> does not exist"}` or equivalent JSON if a user by the same name does not exist
 
 ### `DELETE /users/<id>`
 Deletes the user identified by the `<id>`.
@@ -54,26 +55,26 @@ Deletes the user identified by the `<id>`.
 - `password`: the user's password
 #### Response
 - `{"success": true}` or equivalent JSON on success
-- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect password"}` or equivalent JSON if the password pair is not correct (including if the user doesn't exist)
 
-### `POST /changepassword`
+### `PUT /users/<id>/password`
 Changes a user's password.
 #### Required parameters
-- `userid`: the user ID of the user whose password is being changed
 - `oldPassword`: the user's current password
 - `newPassword`: the new password desired for the user
 #### Response
 - `{"success": true}` or equivalent JSON on success
-- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
+- `{"error": "Incorrect password"}` or equivalent JSON if the password pair is not correct (including if the user doesn't exist)
 
 ### `POST /login`
 Logs in, returning an authentication token.
 #### Required parameters
-- `userid`: the user ID of the user to log in as
+- `username`: the user name of the user to log in as
 - `password`: the user's password
 #### Response
-- `{"token": <token>, "expiresAt": <timestamp>}` or equivalent JSON on success, where `<token>` is an authentication token (long random string) that can be used on other API endpoints, and `<timestamp>` is the number of milliseconds since the UNIX epoch at which the token expires
-- `{"error": "Incorrect userid/password"}` or equivalent JSON if the userid/password pair is not correct (including if the user doesn't exist)
+- `{"id": <id>, "token": <token>, "expiresAt": <timestamp>}` or equivalent JSON on success, where `<id>` is the user's ID, `<token>` is an authentication token (long random string) that can be used on other API endpoints, and `<timestamp>` is the number of milliseconds since the UNIX epoch at which the token expires
+- `{"error": "Incorrect password"}` or equivalent JSON if the password is not correct
+- `{"error": "User <username> does not exist"}` or equivalent JSON if the user does not exist
 
 ### `POST /logout`
 Logs out, invalidating all tokens for a user.

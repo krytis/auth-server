@@ -9,7 +9,7 @@ describe('AuthenticationAPI', () => {
     const username = 'testuser';
     const password = 'hunter2';
     const database = new SQLiteDatabase(':memory:');
-    const api = new AuthenticationAPI(database, 100000);
+    const api = new AuthenticationAPI(database, 100000, 4);
     let userID: number;
 
     beforeEach(async () => {
@@ -52,20 +52,20 @@ describe('AuthenticationAPI', () => {
 
     describe('tokens', () => {
         test('token generation requires a password', async () => {
-            await expect(api.createToken(userID, password)).resolves.not.toThrow();
-            await expect(api.createToken(userID, 'not the password')).rejects.toThrow();
+            await expect(api.createToken(username, password)).resolves.not.toThrow();
+            await expect(api.createToken(username, 'not the password')).rejects.toThrow();
         });
 
         test('token verification', async () => {
-            const {token} = await api.createToken(userID, password);
+            const {token} = await api.createToken(username, password);
 
             await expect(api.checkToken(userID, token)).resolves.not.toThrow();
             await expect(api.checkToken(userID, 'not the token')).rejects.toThrow();
         });
 
         test('token deletion', async () => {
-            const {token: token1} = await api.createToken(userID, password);
-            const {token: token2} = await api.createToken(userID, password);
+            const {token: token1} = await api.createToken(username, password);
+            const {token: token2} = await api.createToken(username, password);
 
             // tokens work before logout
             await expect(api.checkToken(userID, token1)).resolves.not.toThrow();
