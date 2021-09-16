@@ -2,8 +2,9 @@
  * Overall server tests
  */
 
-jest.mock('../config', () => ({
-    config: {databasePath: ':memory:', port: -1, tokenTTL: 100000, tokenSize: 4, listenAddress: '127.0.0.1'},
+import type {Config} from '../config';
+jest.mock('../config', (): {config: Config} => ({
+    config: {sqliteDBPath: ':memory:', port: -1, tokenTTL: 100000, tokenSize: 4, listenAddress: '127.0.0.1'},
 }));
 import {createServer} from '../routes';
 

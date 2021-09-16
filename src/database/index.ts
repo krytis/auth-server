@@ -30,3 +30,4 @@ export interface Database {
 }
 
 export {SQLiteDatabase} from './sqlite';
+export {PostgresDatabase} from './postgres';

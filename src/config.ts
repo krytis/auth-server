@@ -16,7 +16,9 @@ export interface Config {
     /** The port that the server should listen on */
     port: number;
     /** The path to the SQLite database to use */
-    databasePath: string;
+    sqliteDBPath?: string;
+    /** PostgreSQL configuration */
+    postgresConfig?: {user: string; password: string; host: string; port: number; database: string};
     /** The time, in milliseconds, a token should be valid for. Defaults to 60480000 (one week). */
     tokenTTL: number;
     /** The size, in bytes, of a token. Defaults to 32. */
@@ -32,19 +34,37 @@ function loadConfig(): Config {
     if (Math.floor(port) !== port) throw new Error(BAD_PORT_ERROR);
 
     const root = path.resolve(__dirname, '..');
-    if (!process.env.DATABASE_PATH) {
-        throw new Error(
-            `DATABASE_PATH must be specified in .env or as an environment variable ` +
-            `as a path (absolute or relative to ${root}) to a SQLite database.`
-        );
-    }
-    const databasePath = path.resolve(root, process.env.DATABASE_PATH);
-    const directory = path.parse(databasePath).dir;
-    if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
-        throw new Error(`The database specified in DATABASE_PATH must be in a directory that exists.`);
+
+    const config: Config = {port, tokenTTL: 60480000, tokenSize: 32, listenAddress: '127.0.0.1'};
+    if (process.env.SQLITE_PATH) {
+        if (process.env.PG_USER) throw new Error(`Cannot specify configuration for both PostgreSQL and SQLite.`);
+        const sqliteDBPath = path.resolve(root, process.env.SQLITE_PATH);
+        const directory = path.parse(sqliteDBPath).dir;
+        if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+            throw new Error(`The database specified in SQLITE_PATH must be in a directory that exists.`);
+        }
+        config.sqliteDBPath = sqliteDBPath;
+    } else {
+        if (!process.env.PG_USER) {
+            throw new Error(`One of the environment variables SQLITE_PATH or PG_USER must be specified.`);
+        }
+        if (!process.env.PG_PASSWORD) throw new Error(`Must specify PG_PASSWORD when using PostgreSQL.`);
+        if (!process.env.PG_DATABASE) throw new Error(`Must specify PG_DATABASE when using PostgreSQL.`);
+
+        const pgPort = parseInt(process.env.PG_PORT || '5432');
+        if (isNaN(pgPort) || pgPort < 1 || pgPort > 49151) {
+            throw new Error(`The environment variable TOKEN_TTL must be an integer between 1 annd 49151.`);
+        }
+
+        config.postgresConfig = {
+            user: process.env.PG_USER,
+            password: process.env.PG_PASSWORD,
+            host: process.env.PG_HOST || '127.0.0.1',
+            port: pgPort,
+            database: process.env.PG_DATABASE,
+        };
     }
 
-    const config: Config = {port, databasePath, tokenTTL: 60480000, tokenSize: 32, listenAddress: '127.0.0.1'};
     if (process.env.TOKEN_TTL) {
         config.tokenTTL = parseInt(process.env.TOKEN_TTL);
         if (isNaN(config.tokenTTL) || config.tokenTTL < 1) {

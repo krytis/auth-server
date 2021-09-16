@@ -13,12 +13,17 @@ git clone https://github.com/krytis/auth-server.git
 ### Configuration
 Within the cloned `auth-server/` directory, you should create a `.env` file that specifies the following configuration variables:
  - `PORT`: the port that the server should listen for HTTP requests on
- - `DATABASE_PATH`: a path to a SQLite database, which will be created on startup if it does not exist. If the path specified isn't absolute, it will be parsed relative to `auth-server/`
+ - Either `SQLITE_PATH` (a path to a SQLite database, which will be created on startup if it does not exist; if the path specified isn't absolute, it will be parsed relative to `auth-server/`), or the following Postgres configuration options:
+   - `PG_USER`: the user to use for the Postgres database
+   - `PG_PASSWORD`: the password for the `PG_USER`
+   - `PG_DATABASE`: the database name to use for the Postgres database
 
 The following additional configuration may be specified, but have sane default values:
  - `TOKEN_TTL`: the time that an authentication token will be valid for, in milliseconds. Defaults to `60480000`, or one week.
  - `TOKEN_SIZE`: the size, in **bytes**, of an authentication token. Defaults to `32`.
  - `LISTEN_ADDRESS`: the IP address that the server should listen on. Defaults to `127.0.0.1`, since the server is designed for use with a reverse proxy.
+ - (if using Postgres) `PG_HOST`: the host on which your Postgres server is running. Defaults to `127.0.0.1`.
+ - (if using Postgres) `PG_PORT`: the port to connect to the Postgres server on. Defaults to `5432`.
 
 ### Running
 The server can be built and run with the following commands, run from within the `auth-server/` directory:

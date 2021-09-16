@@ -3,13 +3,22 @@
  * All database abstractions should be able to pass these.
  */
 
-import {Database, SQLiteDatabase} from '../database';
+// load bearing import order - mocking fails otherwise
+import {newDb} from 'pg-mem';
+import {Database, SQLiteDatabase, PostgresDatabase} from '../database';
 
+const PGMemory = newDb().adapters.createPg().Pool;
 const wrappers: Database[] = [
     new SQLiteDatabase(':memory:'),
+    // Config is irrelevant because
+    new PostgresDatabase(
+        {user: '', database: 'test', password: '', host: '', port: -1},
+        32,
+        new PGMemory(),
+    ),
 ];
 
-describe.each(wrappers)('%s', (database) => {
+describe.each(wrappers)('%s', database => {
     describe('users', () => {
         test('adding, deleting, and retrieving users', async () => {
             const user = {name: 'testuser2', passwordHash: 'hunter2', registrationTime: 1, ip: '127.0.0.1'};

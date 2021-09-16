@@ -8,7 +8,7 @@ import type {FromSchema} from 'json-schema-to-ts';
 
 import {AuthenticationAPI} from './api';
 import {config} from './config';
-import {SQLiteDatabase} from './database';
+import {Database, PostgresDatabase, SQLiteDatabase} from './database';
 import {
     passwordChangeSchema, passwordOnlySchema,
     usernamePasswordSchema, userIDTokenSchema,
@@ -24,7 +24,19 @@ async function errorHandler(error: FastifyError, request: FastifyRequest, reply:
 }
 
 function addRoutes(server: FastifyInstance, options: FastifyPluginOptions, done: HookHandlerDoneFunction) {
-    const api = new AuthenticationAPI(new SQLiteDatabase(config.databasePath), config.tokenTTL, config.tokenSize);
+    let db: Database;
+    if (config.sqliteDBPath) {
+        db = new SQLiteDatabase(config.sqliteDBPath);
+    } else if (config.postgresConfig) {
+        db = new PostgresDatabase(config.postgresConfig, config.tokenSize * 2); // each byte is 2 hex characters
+    } else {
+        throw new Error(
+            'No database configuration found. ' +
+            'This probably means there is a bug in the config validation. ' +
+            'Make sure either PostgreSQL or SQLite is configured, as explained in README.md'
+        );
+    }
+    const api = new AuthenticationAPI(db, config.tokenTTL, config.tokenSize);
 
     server.get<{Params: {id: number}}>(
         '/users/:id',
