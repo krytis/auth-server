@@ -1,5 +1,5 @@
-# auth-server
-[![CI](https://github.com/krytis/auth-server/actions/workflows/ci.yml/badge.svg)](https://github.com/krytis/auth-server/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/krytis/auth-server/branch/main/graph/badge.svg?token=XQ0LE9ZV29)](https://codecov.io/gh/krytis/auth-server)
+# `@krytis/auth-server`
+[![CI](https://github.com/krytis/auth-server/actions/workflows/ci.yml/badge.svg)](https://github.com/krytis/auth-server/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/krytis/auth-server/branch/main/graph/badge.svg?token=XQ0LE9ZV29)](https://codecov.io/gh/krytis/auth-server) ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 An authentication server designed to work with the Krytis ecosystem.
 
