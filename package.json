@@ -12,26 +12,25 @@
   "author": "Annika L. <annika0uwu@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@types/better-sqlite3": "^7.4.0",
-    "argon2": "^0.28.2",
-    "better-sqlite3": "^7.4.3",
+    "@types/better-sqlite3": "^7.4.1",
+    "argon2": "^0.28.3",
+    "better-sqlite3": "^7.4.5",
     "dotenv": "^10.0.0",
-    "fastify": "^3.21.0",
+    "fastify": "^3.24.1",
     "json-schema-to-ts": "^1.6.4",
-    "typescript": "^4.4.2"
+    "typescript": "^4.5.2"
   },
   "devDependencies": {
-    "@krytis/eslint-config": "^0.1.0",
-    "@pkmn/eslint-config": "^1.5.1",
-    "@types/jest": "^27.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.31.0",
-    "@typescript-eslint/parser": "^4.31.0",
+    "@krytis/eslint-config": "^0.2.1",
+    "@pkmn/eslint-config": "^2.1.0",
+    "@types/jest": "^27.0.3",
+    "@typescript-eslint/eslint-plugin": "^5.5.0",
+    "@typescript-eslint/parser": "^5.5.0",
     "codecov": "^3.8.3",
-    "eslint": "^7.32.0",
-    "eslint-plugin-import": "^2.24.2",
-    "eslint-plugin-jest": "^24.4.0",
-    "jest": "^27.1.0",
-    "ts-jest": "^27.0.5"
+    "eslint": "^8.4.0",
+    "eslint-plugin-jest": "^25.3.0",
+    "jest": "^27.4.3",
+    "ts-jest": "^27.0.7"
   },
   "eslintConfig": {
     "extends": "@krytis"
